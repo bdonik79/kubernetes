@@ -1,0 +1,55 @@
+##################### Worker node config #########################
+yum -y update && yum install -y vim wget net-tools yum-utils device-mapper-persistent-data lvm2
+hostnamectl set-hostname k8sworker
+cat > /etc/hosts << EOF
+
+127.0.0.1       k8sworker
+192.168.7.124   k8sworker
+EOF
+sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
+swapoff -a
+sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+systemctl disable firewalld && systemctl stop firewalld
+firewall-cmd --permanent --add-port=10250/tcp
+firewall-cmd --permanent --add-port=10255/tcp
+firewall-cmd --permanent --add-port=30000-32767/tcp
+firewall-cmd --permanent --add-port=6783/tcp
+firewall-cmd  --reload
+
+modprobe br_netfilter
+lsmod | grep br_netfilter
+echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+cat > /etc/sysctl.d/k8s.conf << EOF
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sysctl --system
+reboot
+######################## Install docker ##########################
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum -y install docker-ce docker-ce-cli containerd.io
+#sed -i 's/disabled_plugins/#disabled_plugins/g' /etc/containerd/config.toml
+containerd config default > /etc/containerd/config.toml
+systemctl enable docker containerd && systemctl start docker && systemctl status docker
+systemctl restart containerd && sleep 5 && systemctl status containerd
+reboot
+#################### Kubernetes install ######################
+cat > /etc/yum.repos.d/kubernetes.repo <<EOF
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+       https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF
+yum check-update && yum install kubeadm -y
+systemctl restart docker containerd && systemctl status docker containerd
+kubeadm token create --print-join-command # exectue this command first master node
+
+systemctl enable kubelet && systemctl start kubelet && sleep 5 && systemctl status kubelet
+systemctl restart docker containerd && systemctl status docker containerd
+
+# after ready then
+reboot
+
+kubeadm join 192.168.7.123:6443 --token qc4lw9.84v4qu442dhra3cn --discovery-token-ca-cert-hash sha256:20df92f43d56216768d4a3e222257836182696dc153c85549c29d88c51bfb4cf
