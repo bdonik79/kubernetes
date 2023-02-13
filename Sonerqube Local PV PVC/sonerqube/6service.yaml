@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarqube-service
+  namespace: sonar
+  labels:
+    app: postgres
+spec:
+  selector:
+    app: sonar
+    tier: frontend
+  ports:
+    - protocol: TCP
+      port: 9000
+  type: NodePort

@@ -1,0 +1,15 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: sonarqube-local-pvc
+  namespace: sonar
+  labels:
+    type: local
+    app: sonar
+spec:
+  storageClassName: local-storage-sonarqube
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi

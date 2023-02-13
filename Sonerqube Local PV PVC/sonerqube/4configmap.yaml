@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sonar-db-connection
+  namespace: sonar
+  labels:
+    type: local
+    app: sonar
+data:
+  username: sonar
+  password: sonar
+  dburl: "jdbc:postgresql://postgres:5432/sonar"
+#  javaopts: "-Duser.timezone=Asia/Dhaka -Xmx2048m"

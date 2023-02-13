@@ -1,0 +1,14 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgresql-local-pvc
+  namespace: sonar
+  labels:
+    app: postgres
+spec:
+  storageClassName: local-storage-postgresql
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi

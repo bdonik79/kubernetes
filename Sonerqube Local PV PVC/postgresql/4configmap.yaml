@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-db-secret-config
+  namespace: sonar 
+  labels:
+    app: postgres
+data:
+  username: c29uYXI= # (echo -n 'sonar' | base64)
+  passwd: c29uYXI=   # (echo -n 'sonar' | base64)
+  database: c29uYXI= # (echo -n 'sonar' | base64)

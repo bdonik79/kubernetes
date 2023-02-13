@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonar
+  namespace: sonar
+  labels:
+    app: sonar
+    tier: frontend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: sonar
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: sonar
+        tier: frontend
+    spec:
+      initContainers:
+      - name: init
+        image: busybox
+        command:
+        - sysctl
+        - -w
+        - vm.max_map_count=262144
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: true
+      containers:
+      - name: sonarqube
+        image: sonarqube:latest
+#        imagePullPolicy: Always
+        ports:
+        - containerPort: 9000
+#        lifecycle:
+#          postStart:
+#            exec:
+#              command: 
+#              - sysctl
+#              - -w
+#              - vm.max_map_count=262144
+        env:
+        - name: SONARQUBE_JDBC_URL
+          valueFrom:
+            configMapKeyRef:
+              name: sonar-db-connection
+              key: dburl
+        - name: SONARQUBE_JDBC_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-db-secret-config
+              key: username
+        - name: SONARQUBE_JDBC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-db-secret-config
+              key: passwd
+        volumeMounts:
+          - mountPath: /opt/sonarqube/conf
+            name: sonarqube-local-pv
+            subPath: conf
+          - mountPath: /opt/sonarqube/data
+            name: sonarqube-local-pv
+            subPath: data
+          - mountPath: /opt/sonarqube/extensions
+            name: sonarqube-local-pv
+            subPath: extensions
+          - mountPath: /opt/sonarqube/lib/bundled-plugins
+            name: sonarqube-local-pv
+            subPath: bundled-plugins       
+        resources:
+          requests:
+            memory: "1024Mi"
+          limits:
+            memory: "2048Mi"
+      volumes:
+      - name: sonarqube-local-pv
+        persistentVolumeClaim:
+          claimName: sonarqube-local-pvc
